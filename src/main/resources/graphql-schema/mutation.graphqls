@@ -1,0 +1,5 @@
+type Mutation {
+    addPerson(name: String!, gender: String!): Boolean
+
+    addPersonByObject(personInput: PersonInput): Boolean
+}

@@ -1,0 +1,73 @@
+version: "2.4"
+
+services:
+  app:
+    image: 127.0.0.1:5000/person-details_app
+    working_dir: /app
+    environment:
+      DB_HOST: postgres_base
+      DB_PORT: 5432
+      DB_NAME: pd
+      DB_USER: pd
+      DB_PASSWORD: password
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_DB_INDEX: 0
+      REDIS_PORT: 6379
+      REDIS_PWD: 123456
+    ports:
+      - 8090:8090
+      - 5005:5005
+    networks:
+      - public
+      - backend
+      - cache
+    volumes:
+      - .:/app
+      - gradle-cache:/home/gradle/.gradle
+    depends_on:
+      - bff
+      - postgres_base
+      - redis
+  bff:
+    image: 127.0.0.1:5000/person-details_bff
+    working_dir: /app
+    ports:
+      - 8199:8081
+      - 5099:5006
+    networks:
+      - public
+    volumes:
+      - .:/app
+
+  postgres_base:
+    image: postgres:11.5
+    restart: always
+    environment:
+      POSTGRES_USER: pd
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pd
+    networks:
+      - backend
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - "6900:5432"
+  redis:
+    image: 127.0.0.1:5000/person-details_redis
+    command: [ "redis-server", "--bind", "0.0.0.0", "--requirepass", "123456" ]
+    ports:
+      - "6399:6379"
+    volumes:
+      - /var/lib/redis-db
+    networks:
+      - cache
+
+volumes:
+  gradle-cache:
+  db:
+
+networks:
+  public:
+  backend:
+  cache:
