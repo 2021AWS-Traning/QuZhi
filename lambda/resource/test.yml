@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: my lambda
+Resources:
+  QzMyambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Action: 'sts:AssumeRole'
+          Principal:
+            Service:
+              - 'lambda.amazonaws.com'
+      Path: /
+
+  QzLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/MyambdaFunction
+      RetentionInDays: 7
+
+  QzMyambdaFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: QzLambdaLogGroup
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Timeout: 180
+      Role: arn:aws:iam::160071257600:role/aws-homework-lambda-quzhi
+      Code:
+        ZipFile: !Sub |
+          const AWS = require('aws-sdk');
+          exports.handler = async (event, context) => {
+            const sourceS3 = new AWS.S3({
+              region: 'ap-southeast-2',
+            });
+            var sourceParams = {
+              Bucket: 'qzSourceLambdaBucket',
+              Key: 'abc.txt'
+            }
+            await sourceS3.getObject(sourceParams, function(err, data) {
+              if (err)
+                return err;
+              var objectData = data.Body;
+              transfer(objectData);
+            });
+          };
+          const transfer= async (objectData)=>{
+            const targetS3 = new AWS.S3({
+              region: 'ap-southeast-2',
+            });
+            var targetParams = {
+              Bucket: 'qzTargetLambdaBucket',
+              Key: 'abc.txt',
+              Body: ''
+            }
+            await s3bucket.upload(targetParams, function(err, data) {
+              console.log("PRINT FILE:", file);
+              if (err) {
+                console.log('ERROR MSG: ', err);
+              } else {
+                console.log('Successfully uploaded data');
+              }
+            });
+          }
+
+  QzCloudWatch:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: cloudwatch
+      EventBusName: regular
+      EventPattern: Json
+      Name: RegularTrigger
+      RoleArn: arn:aws:iam::160071257600:role/aws-homework-lambda-quzhi
+      ScheduleExpression: * * * * *
+      State: ENABLED
+      Targets:
+        - !Ref QzMyambdaFunction
+
+  QzFailedAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: Alarm when failed
+      Namespace: AWS/Lambda
+      MetricName: me
+      Statistic: Average
+      Period: '60'
+      EvaluationPeriods: '1'
+      Threshold: '1'
+      TreatMissingData: ignore
+      ComparisonOperator: GreaterThanOrEqualToThreshold
