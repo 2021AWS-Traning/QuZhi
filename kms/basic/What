@@ -1,0 +1,61 @@
+## Q&A
+### KMS是什么
+- 用来创建和管理加密密钥，并在各种 AWS 服务和应用程序中进行应用。
+
+完全托管：不需要额外的服务器，不需要额外的维护人员。
+简化加密过程：不需要去在意繁琐的加密细节过程，只需要调用相关接口就行了。
+「安全审计功能」：知道谁具备这个密钥的使用权限，什么时候用了这个密钥，什么时候删了这个密钥。
+「确保你的密钥是安全的」：不需要费劲脑汁想办法把你的密钥保存在某个机密的、不对外网暴露的地方。事实上 AWS KMS 的密钥（确切来说是 Matser Key）是完全保存在内存中的，没有任何人（包括 AWS 自己）能够获取到密钥的原始内容，下文会介绍为什么。
+密钥 rotate 流程：AWS 会定时或手动刷新密钥内容
+
+### 2.使用 KMS key 的方式有哪些？
+- Web console
+- AWS集成服务
+- CLI
+
+### 3.可以对 KMS key 进行哪些操作？（至少 5 个）
+- 创建、查看、编辑、标记、启用、禁止
+
+## 使用Cli
+
+`get permission to create CMK
+create KMS key`
+` aws kms --profile tw-aws-beach create-key
+"{
+    "KeyMetadata": {
+        "AWSAccountId": "160071257600",
+        "KeyId": "0268bf28-b4c9-4104-ae22-70394cf8caaa",
+        "Arn": "arn:aws:kms:ap-southeast-2:160071257600:key/0268bf28-b4c9-4104-ae22-70394cf8caaa",
+        "CreationDate": "2021-06-12T16:07:13.399000+08:00",
+        "Enabled": true,
+        "Description": "",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "KeyState": "Enabled",
+        "Origin": "AWS_KMS",
+        "KeyManager": "CUSTOMER",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+        ]
+    }
+}"`
+
+`encrypt
+aws kms --profile tw-aws-beach encrypt \
+    --key-id 3a71039c-f731-4784-acbd-7f21fdf2f3c5 \
+    --region ap-southeast-2 \
+    --plaintext fileb://qz.txt \
+    --output text \
+    --query CiphertextBlob | base64 \
+    --decode > encrypt-qz.txt`
+
+针对同一字符串加密的结果是不同的
+
+`decrypt
+aws kms --profile tw-aws-beach decrypt \
+    --ciphertext-blob fileb://encrypt-qz.txt \
+    --key-id 3a71039c-f731-4784-acbd-7f21fdf2f3c5 \
+    --region ap-southeast-2 \
+    --output text \
+    --query Plaintext | base64 \
+    --decode > decrypt-qz.txt`
